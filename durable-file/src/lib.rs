@@ -16,7 +16,6 @@ impl DurableFile {
     }
 
     pub fn close(&mut self) -> io::Result<()> {
-        println!("Close file");
         self.file.sync_all()?;
         self.need_sync = false;
 
@@ -26,13 +25,11 @@ impl DurableFile {
 
 impl io::Write for DurableFile {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        println!("Write file");
         self.need_sync = true;
         self.file.write(buf)
     }
 
     fn flush(&mut self) -> io::Result<()> {
-        println!("Flush file");
         self.need_sync = false;
 
         self.file.flush()
@@ -41,12 +38,10 @@ impl io::Write for DurableFile {
 
 impl Drop for DurableFile {
     fn drop(&mut self) {
-        println!("Cleaning up! 🧹");
+        println!("Cleaning up! 🧹"); // Just for learning purposes
 
         if self.need_sync {
             panic!("You forgot to sync!")
-        } else {
-            println!("all good!");
         }
     }
 }
@@ -73,5 +68,19 @@ mod tests {
     fn ok_when_close() {
         let mut file = new_durable_file();
         file.close().unwrap();
+    }
+
+    #[test]
+    fn need_async_flag_true() {
+        let mut file = new_durable_file();
+        assert_eq!(file.need_sync, true);
+        file.close().unwrap();
+    }
+
+    #[test]
+    fn need_async_flag_false() {
+        let mut file = new_durable_file();
+        file.close().unwrap();
+        assert_eq!(file.need_sync, false)
     }
 }
