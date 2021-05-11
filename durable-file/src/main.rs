@@ -8,6 +8,7 @@ fn main() -> Result<(), io::Error> {
     // file.write_all(b"Hello, world!")?;
 
     let mut durable_file = DurableFile::new(file);
+    durable_file.write_all(b"Hello, world!")?;
     durable_file.close()?;
 
     println!("Durable file: {:?}", durable_file);
