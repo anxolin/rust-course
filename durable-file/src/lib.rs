@@ -1,5 +1,5 @@
-use std::fs;
 use std::io;
+use std::{fs, io::Write};
 
 #[derive(Debug)]
 pub struct DurableFile {
@@ -15,24 +15,31 @@ impl DurableFile {
         }
     }
 
-    pub fn close(&mut self) -> io::Result<()> {
-        self.file.sync_all()?;
-        self.need_sync = false;
+    pub fn close(mut self) -> Result<(), (DurableFile, io::Error)> {
+        if !self.need_sync {
+            return Ok(());
+        }
 
-        Ok(())
+        match self.flush() {
+            Ok(_) => Ok(()),
+            Err(error) => Err((self, error)),
+        }
     }
 }
 
 impl io::Write for DurableFile {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        let result = self.file.write(buf)?;
         self.need_sync = true;
-        self.file.write(buf)
+
+        Ok(result)
     }
 
     fn flush(&mut self) -> io::Result<()> {
+        self.file.sync_all()?;
         self.need_sync = false;
 
-        self.file.flush()
+        Ok(())
     }
 }
 
@@ -66,21 +73,21 @@ mod tests {
 
     #[test]
     fn ok_when_close() {
-        let mut file = new_durable_file();
+        let file = new_durable_file();
         file.close().unwrap();
     }
 
     #[test]
     fn need_async_flag_true() {
-        let mut file = new_durable_file();
+        let file = new_durable_file();
         assert_eq!(file.need_sync, true);
         file.close().unwrap();
     }
 
-    #[test]
-    fn need_async_flag_false() {
-        let mut file = new_durable_file();
-        file.close().unwrap();
-        assert_eq!(file.need_sync, false)
-    }
+    // #[test]
+    // fn need_async_flag_false() {
+    //     let file = new_durable_file();
+    //     file.close().unwrap();
+    //     assert_eq!(file.need_sync, false)
+    // }
 }

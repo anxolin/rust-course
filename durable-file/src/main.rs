@@ -1,17 +1,15 @@
 use std::fs::File;
-use std::io::{self, prelude::*};
+use std::io::prelude::*;
 
 use durable_file::DurableFile;
 
-fn main() -> Result<(), io::Error> {
-    let file = File::create("hello.txt")?;
+fn main() {
+    let file = File::create("hello.txt").unwrap();
     // file.write_all(b"Hello, world!")?;
 
     let mut durable_file = DurableFile::new(file);
-    durable_file.write_all(b"Hello, world!")?;
-    durable_file.close()?;
-
     println!("Durable file: {:?}", durable_file);
 
-    Ok(())
+    durable_file.write_all(b"Hello, world!").unwrap();
+    durable_file.close().unwrap();
 }
